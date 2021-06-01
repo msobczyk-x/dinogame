@@ -10,16 +10,26 @@ import (
 	"github.com/hajimehoshi/ebiten"
 	"github.com/hajimehoshi/ebiten/ebitenutil"
 	"github.com/hajimehoshi/ebiten/inpututil"
+	"github.com/hajimehoshi/ebiten/text"
+	"github.com/hajimehoshi/ebiten/v2/examples/resources/fonts"
+	"golang.org/x/image/font"
+	"golang.org/x/image/font/opentype"
 )
 
 const (
-	screenHeight       = 600
-	screenWidth        = 1100
-	y_pos              = 310
-	GRAVITY            = 9.81
-	JV                 = 35
-	bird_probability   = 0.95
-	cactus_probability = 0.75
+	screenHeight            = 600
+	screenWidth             = 1100
+	y_pos                   = 310
+	GRAVITY                 = 9.81
+	JV                      = 35
+	bird_probability        = 0.98
+	cactus_probability      = 0.75
+	ModeTitle          Mode = iota
+	ModeGame
+	ModeGameOver
+	titleFontSize = fontSize * 1.5
+	fontSize      = 24
+	smallFontSize = fontSize / 2
 )
 
 var (
@@ -40,6 +50,10 @@ var (
 	BIRD2 *ebiten.Image
 	CLOUD *ebiten.Image
 	BG    *ebiten.Image
+
+	titleArcadeFont font.Face
+	arcadeFont      font.Face
+	smallArcadeFont font.Face
 )
 
 func init() {
@@ -128,6 +142,7 @@ func NewGame() *Game {
 }
 
 func (g *Game) init() {
+	g.Mode = ModeTitle
 	g.dino.X_POS = 80
 	g.dino.Y_POS = 310
 	g.dino.Y_POS_DUCK = 340
@@ -143,7 +158,7 @@ func (g *Game) init() {
 	g.Bird.Y_POS = 300
 	g.Bird.IMAGE = BIRD
 	g.Bird.IMAGE2 = BIRD2
-	g.Bird.X_VELOCITY = 120
+	g.Bird.X_VELOCITY = 100
 	g.Bird.STATE = false
 
 	g.Cloud.X_POS = 1600
@@ -169,6 +184,8 @@ func (g *Game) init() {
 	g.Cactus.ILE = 0.3
 	g.Cactus.IS_LARGE = false
 
+	g.score = 0
+
 	//r_cactus_size := rand.New(s_cactus_size)
 
 }
@@ -183,13 +200,17 @@ func mod(a, b int) int {
 	return m
 }
 
+type Mode int
 type Game struct {
-	dino   Dinosaur
-	Bird   entity
-	Cloud  entity
-	Cloud2 entity
-	Cloud3 entity
-	Cactus entity
+	Mode          Mode
+	dino          Dinosaur
+	Bird          entity
+	Cloud         entity
+	Cloud2        entity
+	Cloud3        entity
+	Cactus        entity
+	gameoverCount int
+	score         int
 }
 
 func random() float64 {
@@ -205,8 +226,6 @@ func randomY() int {
 
 }
 func (g *Game) Update(screen *ebiten.Image) error {
-
-	//poruszanie sie ptakow i chmur, kaktusa
 	if g.Cloud.X_POS < 0 {
 		g.Cloud.X_POS = 1600
 	}
@@ -222,138 +241,239 @@ func (g *Game) Update(screen *ebiten.Image) error {
 	}
 	g.Cloud3.X_POS -= g.Cloud3.X_VELOCITY * 0.4
 
-	if g.Bird.STATE {
-		if g.Bird.X_POS < 0 {
-			g.Bird.X_POS = 1600
-			g.Bird.STATE = false
+	switch g.Mode {
+	case ModeTitle:
+		if inpututil.IsKeyJustPressed(ebiten.KeySpace) {
+			g.Mode = ModeGame
 		}
-		g.Bird.X_POS -= g.Bird.X_VELOCITY * 0.4
-
-	} else {
-		if random() > bird_probability {
-			g.Bird.STATE = true
-			g.Bird.Y_POS = float64(randomY())
-		}
-	}
-
-	if g.Cactus.STATE {
-		if g.Cactus.X_POS < 0 {
-			g.Cactus.X_POS = 2000
-			g.Cactus.STATE = false
-
-		}
-		g.Cactus.X_POS -= g.Cactus.X_VELOCITY * 0.4
-	} else {
-		if random() > cactus_probability {
-			g.Cactus.ILE = random()
-			if random() > 0.90 {
-				g.Cactus.IS_LARGE = true
-			} else {
-				g.Cactus.IS_LARGE = false
+	case ModeGame:
+		g.score++
+		if g.Bird.STATE {
+			if g.Bird.X_POS < 0 {
+				g.Bird.X_POS = 1600
+				g.Bird.STATE = false
 			}
-			if g.Cactus.IS_LARGE {
-				if g.Cactus.ILE < 0.7 {
-					g.Cactus.IMAGE = LARGE_CACTUS
-				} else if g.Cactus.ILE > 0.7 && g.Cactus.ILE < 0.90 {
-					g.Cactus.IMAGE = LARGE_CACTUS2
-				} else if g.Cactus.ILE > 0.90 {
-					g.Cactus.IMAGE = LARGE_CACTUS3
+			g.Bird.X_POS -= g.Bird.X_VELOCITY * 0.4
+
+		} else {
+			if random() > bird_probability {
+				g.Bird.STATE = true
+				g.Bird.Y_POS = float64(randomY())
+			}
+		}
+
+		if g.Cactus.STATE {
+			if g.Cactus.X_POS < 0 {
+				g.Cactus.X_POS = 2000
+				g.Cactus.STATE = false
+
+			}
+			g.Cactus.X_POS -= g.Cactus.X_VELOCITY * 0.4
+		} else {
+			if random() > cactus_probability {
+				g.Cactus.ILE = random()
+				if random() > 0.90 {
+					g.Cactus.IS_LARGE = true
+				} else {
+					g.Cactus.IS_LARGE = false
 				}
-			} else {
-				if g.Cactus.ILE < 0.8 {
-					g.Cactus.IMAGE = SMALL_CACTUS
-				} else if g.Cactus.ILE > 0.8 && g.Cactus.ILE < 0.90 {
-					g.Cactus.IMAGE = SMALL_CACTUS2
-				} else if g.Cactus.ILE > 0.90 {
-					g.Cactus.IMAGE = SMALL_CACTUS3
+				if g.Cactus.IS_LARGE {
+					if g.Cactus.ILE < 0.7 {
+						g.Cactus.IMAGE = LARGE_CACTUS
+					} else if g.Cactus.ILE > 0.7 && g.Cactus.ILE < 0.90 {
+						g.Cactus.IMAGE = LARGE_CACTUS2
+					} else if g.Cactus.ILE > 0.90 {
+						g.Cactus.IMAGE = LARGE_CACTUS3
+					}
+				} else {
+					if g.Cactus.ILE < 0.8 {
+						g.Cactus.IMAGE = SMALL_CACTUS
+					} else if g.Cactus.ILE > 0.8 && g.Cactus.ILE < 0.90 {
+						g.Cactus.IMAGE = SMALL_CACTUS2
+					} else if g.Cactus.ILE > 0.90 {
+						g.Cactus.IMAGE = SMALL_CACTUS3
+					}
 				}
+
+				g.Cactus.STATE = true
+
 			}
 
-			g.Cactus.STATE = true
+		}
+		fmt.Println("Y BIRD: ", g.Bird.Y_POS)
+		//reakcje na klawisze dla dinozaura
+		if inpututil.IsKeyJustPressed(ebiten.KeySpace) {
+			g.dino.JUMP_STATE = true
+			g.dino.DUCK_STATE = false
+			g.dino.RUN_STATE = false
+		} else if ebiten.IsKeyPressed(ebiten.KeyDown) {
+			g.dino.JUMP_STATE = false
+			g.dino.DUCK_STATE = true
+			g.dino.RUN_STATE = false
+		} else {
+			g.dino.JUMP_STATE = false
+			g.dino.DUCK_STATE = false
+			g.dino.RUN_STATE = true
+		}
+
+		//fmt.Println("Duck state: ", g.dino.DUCK_STATE)
+		//fmt.Println("Run state: ", g.dino.RUN_STATE)
+		//fmt.Println("Jump state: ", g.dino.JUMP_STATE)
+		//fmt.Println("jumpvel", g.dino.JUMP_VEL)
+		if g.dino.Y_POS > 310 {
+
+			if g.dino.JUMP_VEL > 0 { // a może
+				g.dino.JUMP_VEL -= 40 * 2 // terminal velocity // nie no git ale interval za szybki w sensie -= albo przemnozyc przez cos +1 gravity trzeba dodac
+				// g.dino.Jump_vel += 4
+				//fmt.Println("TEN IF Pierwszy")
+
+			}
+
+			g.dino.JUMP_STATE = false
+		} else {
+			g.dino.JUMP_VEL = 0
+			g.dino.Y_POS = 310
+		}
+
+		if g.dino.JUMP_STATE {
+			g.dino.IMAGE = RUNNING
+			g.dino.IMAGE2 = JUMPING
+			g.dino.JUMP_VEL += 75 // nie no bo jak jest + to idzie w dol += to w dol a jak -= to w gore # niemożliwe no odpal NO I DZIAŁA
+			g.dino.Y_POS += g.dino.JUMP_VEL
+			g.dino.JUMP_VEL += 20
+			//fmt.Println("TEN IF DRUGI")
+
+		}
+		g.dino.Y_POS += g.dino.JUMP_VEL // niech jego lokalizacja Y się aktualizuje cały czas, zamieniamy tylko jumpvel
+		if g.dino.DUCK_STATE {
+			g.dino.IMAGE = DUCKING
+			g.dino.IMAGE2 = DUCKING2
+			g.dino.STEP_INDEX++
+			time.Sleep(100 * time.Millisecond)
+			//fmt.Println(g.dino.STEP_INDEX)
 
 		}
 
-	}
-	fmt.Println("Y BIRD: ", g.Bird.Y_POS)
-	//reakcje na klawisze dla dinozaura
-	if inpututil.IsKeyJustPressed(ebiten.KeyW) {
-		g.dino.JUMP_STATE = true
-		g.dino.DUCK_STATE = false
-		g.dino.RUN_STATE = false
-	} else if ebiten.IsKeyPressed(ebiten.KeyS) {
-		g.dino.JUMP_STATE = false
-		g.dino.DUCK_STATE = true
-		g.dino.RUN_STATE = false
-	} else {
-		g.dino.JUMP_STATE = false
-		g.dino.DUCK_STATE = false
-		g.dino.RUN_STATE = true
-	}
-
-	//fmt.Println("Duck state: ", g.dino.DUCK_STATE)
-	//fmt.Println("Run state: ", g.dino.RUN_STATE)
-	//fmt.Println("Jump state: ", g.dino.JUMP_STATE)
-	//fmt.Println("jumpvel", g.dino.JUMP_VEL)
-	if g.dino.Y_POS > 310 {
-
-		if g.dino.JUMP_VEL > 0 { // a może
-			g.dino.JUMP_VEL -= 40 * 2 // terminal velocity // nie no git ale interval za szybki w sensie -= albo przemnozyc przez cos +1 gravity trzeba dodac
-			// g.dino.Jump_vel += 4
-			//fmt.Println("TEN IF Pierwszy")
-
+		if g.dino.RUN_STATE {
+			g.dino.IMAGE = RUNNING
+			g.dino.IMAGE2 = RUNNING2
+			g.dino.STEP_INDEX++
+			time.Sleep(100 * time.Millisecond)
+			//fmt.Println(g.dino.STEP_INDEX)
 		}
 
-		g.dino.JUMP_STATE = false
-	} else {
-		g.dino.JUMP_VEL = 0
-		g.dino.Y_POS = 310
+		if g.dino.STEP_INDEX >= 10 {
+			g.dino.STEP_INDEX = 0
+		}
+		if g.Collision() {
+			g.Mode = ModeGameOver
+			g.gameoverCount = 30
+		}
+	case ModeGameOver:
+		if g.gameoverCount > 0 {
+			g.gameoverCount--
+		}
+		if g.gameoverCount == 0 && ebiten.IsKeyPressed(ebiten.KeySpace) {
+			g.init()
+			g.Mode = ModeTitle
+		}
 	}
 
-	if g.dino.JUMP_STATE {
-		g.dino.IMAGE = RUNNING
-		g.dino.IMAGE2 = JUMPING
-		g.dino.JUMP_VEL += 75 // nie no bo jak jest + to idzie w dol += to w dol a jak -= to w gore # niemożliwe no odpal NO I DZIAŁA
-		g.dino.Y_POS += g.dino.JUMP_VEL
-		g.dino.JUMP_VEL += 20
-		//fmt.Println("TEN IF DRUGI")
+	//poruszanie sie ptakow i chmur, kaktusa
 
-	}
-	g.dino.Y_POS += g.dino.JUMP_VEL // niech jego lokalizacja Y się aktualizuje cały czas, zamieniamy tylko jumpvel
-	if g.dino.DUCK_STATE {
-		g.dino.IMAGE = DUCKING
-		g.dino.IMAGE2 = DUCKING2
-		g.dino.STEP_INDEX++
-		time.Sleep(100 * time.Millisecond)
-		//fmt.Println(g.dino.STEP_INDEX)
-
-	}
-
-	if g.dino.RUN_STATE {
-		g.dino.IMAGE = RUNNING
-		g.dino.IMAGE2 = RUNNING2
-		g.dino.STEP_INDEX++
-		time.Sleep(100 * time.Millisecond)
-		//fmt.Println(g.dino.STEP_INDEX)
-	}
-
-	if g.dino.STEP_INDEX >= 10 {
-		g.dino.STEP_INDEX = 0
-	}
 	return nil
 }
+func init() {
+	tt, err := opentype.Parse(fonts.PressStart2P_ttf)
+	if err != nil {
+		log.Fatal(err)
+	}
+	const dpi = 72
+	titleArcadeFont, err = opentype.NewFace(tt, &opentype.FaceOptions{
+		Size:    titleFontSize,
+		DPI:     dpi,
+		Hinting: font.HintingFull,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	arcadeFont, err = opentype.NewFace(tt, &opentype.FaceOptions{
+		Size:    fontSize,
+		DPI:     dpi,
+		Hinting: font.HintingFull,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	smallArcadeFont, err = opentype.NewFace(tt, &opentype.FaceOptions{
+		Size:    smallFontSize,
+		DPI:     dpi,
+		Hinting: font.HintingFull,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+}
 func (g *Game) Collision() bool {
+	if g.Mode != ModeGame {
+		return false
+
+	}
+	w_dino, h_dino := g.dino.IMAGE.Size()
+	w_bird, h_bird := g.Bird.IMAGE.Size()
+	w_cactus, h_cactus := g.Cactus.IMAGE.Size()
+	if g.Bird.X_POS-(float64(w_bird)*0.2) <= g.dino.X_POS+(float64(w_dino)*0.5) {
+		if g.dino.Y_POS-(float64(h_dino)*0.5) <= g.Bird.Y_POS+(float64(h_bird)*0.2) {
+			return true
+		}
+	}
+	if g.Cactus.X_POS-(float64(w_cactus)*0.65) <= g.dino.X_POS+(float64(w_dino)*0.5) {
+		if g.dino.Y_POS-(float64(h_dino)*0.5) <= g.Cactus.Y_POS+(float64(h_cactus)*0.5) {
+			return true
+		}
+	}
 
 	return false
 }
 func (g *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(color.RGBA{0xff, 0xff, 0xff, 0xea})
 	g.DrawBG(screen)
-	g.DrawDinoRun(screen)
-	g.DrawBird(screen)
 	g.DrawCloud(screen)
 	g.DrawCloud2(screen)
 	g.DrawCloud3(screen)
+
+	var titleTexts []string
+	var texts []string
+	switch g.Mode {
+	case ModeTitle:
+		titleTexts = []string{"DINOGAME"}
+		texts = []string{"WCIŚNIJ SPACE ABY ROZPOCZĄĆ GRĘ"}
+	case ModeGameOver:
+		texts = []string{"KONIEC GRY!"}
+	}
+	for i, l := range titleTexts {
+		x := (screenWidth - len(l)*titleFontSize) / 2
+		text.Draw(screen, l, titleArcadeFont, x, (i+4)*titleFontSize, color.Black)
+	}
+	for i, l := range texts {
+		x := (screenWidth - len(l)*fontSize) / 2
+		text.Draw(screen, l, arcadeFont, x, (i+4)*fontSize, color.Black)
+	}
+	if g.Mode == ModeTitle {
+		msg := []string{
+			"DINOGAME by Maciej Sobczyk",
+		}
+		for i, l := range msg {
+			x := (screenWidth - len(l)*smallFontSize) / 2
+			text.Draw(screen, l, smallArcadeFont, x, screenHeight-4+(i-1)*smallFontSize, color.Black)
+		}
+	}
+	g.DrawDinoRun(screen)
+	g.DrawBird(screen)
 	g.DrawCactus(screen)
+	scoreStr := fmt.Sprintf("%06d", g.score)
+	text.Draw(screen, scoreStr, arcadeFont, screenWidth-len(scoreStr)*fontSize, fontSize, color.Black)
+
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
