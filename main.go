@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"image/color"
 	"log"
+	"math/rand"
 	"time"
 
 	"github.com/hajimehoshi/ebiten"
@@ -11,11 +13,13 @@ import (
 )
 
 const (
-	screenHeight = 600
-	screenWidth  = 1100
-	y_pos        = 310
-	GRAVITY      = 9.81
-	JV           = 35
+	screenHeight       = 600
+	screenWidth        = 1100
+	y_pos              = 310
+	GRAVITY            = 9.81
+	JV                 = 35
+	bird_probability   = 0.95
+	cactus_probability = 0.75
 )
 
 var (
@@ -25,8 +29,12 @@ var (
 	DUCKING  *ebiten.Image
 	DUCKING2 *ebiten.Image
 
-	SMALL_CACTUS *ebiten.Image
-	LARGE_CACTUS *ebiten.Image
+	SMALL_CACTUS  *ebiten.Image
+	LARGE_CACTUS  *ebiten.Image
+	SMALL_CACTUS2 *ebiten.Image
+	LARGE_CACTUS2 *ebiten.Image
+	SMALL_CACTUS3 *ebiten.Image
+	LARGE_CACTUS3 *ebiten.Image
 
 	BIRD  *ebiten.Image
 	BIRD2 *ebiten.Image
@@ -65,7 +73,27 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	SMALL_CACTUS2, _, err = ebitenutil.NewImageFromFile("assets/Cactus/SmallCactus2.png", ebiten.FilterDefault)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	SMALL_CACTUS3, _, err = ebitenutil.NewImageFromFile("assets/Cactus/SmallCactus3.png", ebiten.FilterDefault)
+
+	if err != nil {
+		log.Fatal(err)
+	}
 	LARGE_CACTUS, _, err = ebitenutil.NewImageFromFile("assets/Cactus/LargeCactus1.png", ebiten.FilterDefault)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	LARGE_CACTUS2, _, err = ebitenutil.NewImageFromFile("assets/Cactus/LargeCactus2.png", ebiten.FilterDefault)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	LARGE_CACTUS3, _, err = ebitenutil.NewImageFromFile("assets/Cactus/LargeCactus3.png", ebiten.FilterDefault)
 
 	if err != nil {
 		log.Fatal(err)
@@ -116,6 +144,7 @@ func (g *Game) init() {
 	g.Bird.IMAGE = BIRD
 	g.Bird.IMAGE2 = BIRD2
 	g.Bird.X_VELOCITY = 120
+	g.Bird.STATE = false
 
 	g.Cloud.X_POS = 1600
 	g.Cloud.Y_POS = 550
@@ -136,6 +165,11 @@ func (g *Game) init() {
 	g.Cactus.Y_POS = 330
 	g.Cactus.IMAGE = SMALL_CACTUS
 	g.Cactus.X_VELOCITY = 240
+	g.Cactus.STATE = false
+	g.Cactus.ILE = 0.3
+	g.Cactus.IS_LARGE = false
+
+	//r_cactus_size := rand.New(s_cactus_size)
 
 }
 func mod(a, b int) int {
@@ -158,7 +192,20 @@ type Game struct {
 	Cactus entity
 }
 
+func random() float64 {
+	rand.Seed(time.Now().UnixNano())
+	return rand.Float64()
+
+}
+
+func randomY() int {
+	rand.Seed(time.Now().UnixNano())
+	//fmt.Println("random int: ", (rand.Intn(350-200+1) + 200))
+	return (rand.Intn(350-200+1) + 200)
+
+}
 func (g *Game) Update(screen *ebiten.Image) error {
+
 	//poruszanie sie ptakow i chmur, kaktusa
 	if g.Cloud.X_POS < 0 {
 		g.Cloud.X_POS = 1600
@@ -175,16 +222,59 @@ func (g *Game) Update(screen *ebiten.Image) error {
 	}
 	g.Cloud3.X_POS -= g.Cloud3.X_VELOCITY * 0.4
 
-	if g.Bird.X_POS < 0 {
-		g.Bird.X_POS = 1600
-	}
-	g.Bird.X_POS -= g.Bird.X_VELOCITY * 0.4
+	if g.Bird.STATE {
+		if g.Bird.X_POS < 0 {
+			g.Bird.X_POS = 1600
+			g.Bird.STATE = false
+		}
+		g.Bird.X_POS -= g.Bird.X_VELOCITY * 0.4
 
-	if g.Cactus.X_POS < 0 {
-		g.Cactus.X_POS = 2000
+	} else {
+		if random() > bird_probability {
+			g.Bird.STATE = true
+			g.Bird.Y_POS = float64(randomY())
+		}
 	}
-	g.Cactus.X_POS -= g.Cactus.X_VELOCITY * 0.4
 
+	if g.Cactus.STATE {
+		if g.Cactus.X_POS < 0 {
+			g.Cactus.X_POS = 2000
+			g.Cactus.STATE = false
+
+		}
+		g.Cactus.X_POS -= g.Cactus.X_VELOCITY * 0.4
+	} else {
+		if random() > cactus_probability {
+			g.Cactus.ILE = random()
+			if random() > 0.90 {
+				g.Cactus.IS_LARGE = true
+			} else {
+				g.Cactus.IS_LARGE = false
+			}
+			if g.Cactus.IS_LARGE {
+				if g.Cactus.ILE < 0.7 {
+					g.Cactus.IMAGE = LARGE_CACTUS
+				} else if g.Cactus.ILE > 0.7 && g.Cactus.ILE < 0.90 {
+					g.Cactus.IMAGE = LARGE_CACTUS2
+				} else if g.Cactus.ILE > 0.90 {
+					g.Cactus.IMAGE = LARGE_CACTUS3
+				}
+			} else {
+				if g.Cactus.ILE < 0.8 {
+					g.Cactus.IMAGE = SMALL_CACTUS
+				} else if g.Cactus.ILE > 0.8 && g.Cactus.ILE < 0.90 {
+					g.Cactus.IMAGE = SMALL_CACTUS2
+				} else if g.Cactus.ILE > 0.90 {
+					g.Cactus.IMAGE = SMALL_CACTUS3
+				}
+			}
+
+			g.Cactus.STATE = true
+
+		}
+
+	}
+	fmt.Println("Y BIRD: ", g.Bird.Y_POS)
 	//reakcje na klawisze dla dinozaura
 	if inpututil.IsKeyJustPressed(ebiten.KeyW) {
 		g.dino.JUMP_STATE = true
@@ -264,8 +354,8 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	g.DrawCloud2(screen)
 	g.DrawCloud3(screen)
 	g.DrawCactus(screen)
-
 }
+
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 	return screenWidth, screenHeight
 }
@@ -301,7 +391,12 @@ func (g *Game) DrawCactus(screen *ebiten.Image) {
 	op := &ebiten.DrawImageOptions{}
 	w, h := g.Cactus.IMAGE.Size()
 	op.GeoM.Translate(-float64(w)/2.0, -float64(h)/2.0)
-	op.GeoM.Translate(float64(g.Cactus.X_POS+float64(w)), float64(screenHeight-g.Cactus.Y_POS+float64(h+128)))
+	if g.Cactus.IS_LARGE {
+		op.GeoM.Translate(float64(g.Cactus.X_POS+float64(w)), float64(screenHeight-g.Cactus.Y_POS+float64(h+99)))
+	} else {
+		op.GeoM.Translate(float64(g.Cactus.X_POS+float64(w)), float64(screenHeight-g.Cactus.Y_POS+float64(h+128)))
+	}
+
 	screen.DrawImage(g.Cactus.IMAGE, op)
 
 }

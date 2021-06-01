@@ -1,6 +1,8 @@
 package main
 
-import "github.com/hajimehoshi/ebiten"
+import (
+	"github.com/hajimehoshi/ebiten"
+)
 
 type entity struct {
 	X_POS      float64
@@ -8,4 +10,7 @@ type entity struct {
 	IMAGE      *ebiten.Image
 	IMAGE2     *ebiten.Image
 	X_VELOCITY float64
+	STATE      bool
+	ILE        float64
+	IS_LARGE   bool
 }
