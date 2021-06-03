@@ -11,7 +11,7 @@ import (
 	"github.com/hajimehoshi/ebiten/ebitenutil"
 	"github.com/hajimehoshi/ebiten/inpututil"
 	"github.com/hajimehoshi/ebiten/text"
-	"github.com/hajimehoshi/ebiten/v2/examples/resources/fonts"
+	"github.com/msobczyk-x/dinogame/tree/master/assets/Font"
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/opentype"
 )
@@ -384,7 +384,7 @@ func (g *Game) Update(screen *ebiten.Image) error {
 	return nil
 }
 func init() {
-	tt, err := opentype.Parse(fonts.PressStart2P_ttf)
+	tt, err := opentype.Parse(Font.ARCADE_N_TTF)
 	if err != nil {
 		log.Fatal(err)
 	}
