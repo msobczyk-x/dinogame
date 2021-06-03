@@ -1,3 +1,7 @@
+/*
+DINOGAME v1.0 by Maciej Sobczyk
+*/
+
 package main
 
 import (
@@ -56,6 +60,7 @@ var (
 	smallArcadeFont font.Face
 )
 
+//inicjalizacja dino,chmur, etc.
 func init() {
 
 	var err error
@@ -141,6 +146,7 @@ func NewGame() *Game {
 	return g
 }
 
+//inicjalizacja z jakimi wartosciami ma uruchomic sie gra
 func (g *Game) init() {
 	g.Mode = ModeTitle
 	g.dino.X_POS = 80
@@ -186,9 +192,9 @@ func (g *Game) init() {
 
 	g.score = 0
 
-	//r_cactus_size := rand.New(s_cactus_size)
-
 }
+
+//funkcja uzyta do animacji
 func mod(a, b int) int {
 	m := a % b
 	if a < 0 && b < 0 {
@@ -221,11 +227,12 @@ func random() float64 {
 
 func randomY() int {
 	rand.Seed(time.Now().UnixNano())
-	//fmt.Println("random int: ", (rand.Intn(350-200+1) + 200))
-	return (rand.Intn(350-200+1) + 200)
+
+	return (rand.Intn(350-220+1) + 220)
 
 }
 func (g *Game) Update(screen *ebiten.Image) error {
+	//przemieszczanie sie chmur
 	if g.Cloud.X_POS < 0 {
 		g.Cloud.X_POS = 1600
 	}
@@ -240,7 +247,7 @@ func (g *Game) Update(screen *ebiten.Image) error {
 		g.Cloud3.X_POS = 1200
 	}
 	g.Cloud3.X_POS -= g.Cloud3.X_VELOCITY * 0.4
-
+	//tryby gry Title,Game,GameOver
 	switch g.Mode {
 	case ModeTitle:
 		if inpututil.IsKeyJustPressed(ebiten.KeySpace) {
@@ -248,6 +255,7 @@ func (g *Game) Update(screen *ebiten.Image) error {
 		}
 	case ModeGame:
 		g.score++
+		//przemieszczanie ptaka
 		if g.Bird.STATE {
 			if g.Bird.X_POS < 0 {
 				g.Bird.X_POS = 1600
@@ -261,7 +269,7 @@ func (g *Game) Update(screen *ebiten.Image) error {
 				g.Bird.Y_POS = float64(randomY())
 			}
 		}
-
+		//przemieszczanie kaktusow
 		if g.Cactus.STATE {
 			if g.Cactus.X_POS < 0 {
 				g.Cactus.X_POS = 2000
@@ -300,7 +308,7 @@ func (g *Game) Update(screen *ebiten.Image) error {
 			}
 
 		}
-		//fmt.Println("Y BIRD: ", g.Bird.Y_POS)
+
 		//reakcje na klawisze dla dinozaura
 		if inpututil.IsKeyJustPressed(ebiten.KeySpace) {
 			g.dino.JUMP_STATE = true
@@ -316,16 +324,11 @@ func (g *Game) Update(screen *ebiten.Image) error {
 			g.dino.RUN_STATE = true
 		}
 
-		//fmt.Println("Duck state: ", g.dino.DUCK_STATE)
-		//fmt.Println("Run state: ", g.dino.RUN_STATE)
-		//fmt.Println("Jump state: ", g.dino.JUMP_STATE)
-		//fmt.Println("jumpvel", g.dino.JUMP_VEL)
+		//reakcje dinozaura na poszczegolne stany
 		if g.dino.Y_POS > 310 {
 
-			if g.dino.JUMP_VEL > 0 { // a może
-				g.dino.JUMP_VEL -= 40 * 2 // terminal velocity // nie no git ale interval za szybki w sensie -= albo przemnozyc przez cos +1 gravity trzeba dodac
-				// g.dino.Jump_vel += 4
-				//fmt.Println("TEN IF Pierwszy")
+			if g.dino.JUMP_VEL > 0 {
+				g.dino.JUMP_VEL -= 40 * 2
 
 			}
 
@@ -338,19 +341,17 @@ func (g *Game) Update(screen *ebiten.Image) error {
 		if g.dino.JUMP_STATE {
 			g.dino.IMAGE = RUNNING
 			g.dino.IMAGE2 = JUMPING
-			g.dino.JUMP_VEL += 75 // nie no bo jak jest + to idzie w dol += to w dol a jak -= to w gore # niemożliwe no odpal NO I DZIAŁA
+			g.dino.JUMP_VEL += 75
 			g.dino.Y_POS += g.dino.JUMP_VEL
 			g.dino.JUMP_VEL += 20
-			//fmt.Println("TEN IF DRUGI")
 
 		}
-		g.dino.Y_POS += g.dino.JUMP_VEL // niech jego lokalizacja Y się aktualizuje cały czas, zamieniamy tylko jumpvel
+		g.dino.Y_POS += g.dino.JUMP_VEL
 		if g.dino.DUCK_STATE {
 			g.dino.IMAGE = DUCKING
 			g.dino.IMAGE2 = DUCKING2
 			g.dino.STEP_INDEX++
 			time.Sleep(100 * time.Millisecond)
-			//fmt.Println(g.dino.STEP_INDEX)
 
 		}
 
@@ -359,12 +360,13 @@ func (g *Game) Update(screen *ebiten.Image) error {
 			g.dino.IMAGE2 = RUNNING2
 			g.dino.STEP_INDEX++
 			time.Sleep(100 * time.Millisecond)
-			//fmt.Println(g.dino.STEP_INDEX)
+
 		}
 
 		if g.dino.STEP_INDEX >= 10 {
 			g.dino.STEP_INDEX = 0
 		}
+
 		if g.Collision() {
 			g.Mode = ModeGameOver
 			g.gameoverCount = 30
@@ -379,10 +381,10 @@ func (g *Game) Update(screen *ebiten.Image) error {
 		}
 	}
 
-	//poruszanie sie ptakow i chmur, kaktusa
-
 	return nil
 }
+
+//inicjalizacja czcionki
 func init() {
 	tt, err := opentype.Parse(fonts.PressStart2P_ttf)
 	if err != nil {
@@ -414,6 +416,7 @@ func init() {
 		log.Fatal(err)
 	}
 }
+
 func (g *Game) Collision() bool {
 	if g.Mode != ModeGame {
 		return false
@@ -422,35 +425,21 @@ func (g *Game) Collision() bool {
 	w_dino, h_dino := g.dino.IMAGE.Size()
 	w_bird, h_bird := g.Bird.IMAGE.Size()
 	w_cactus, h_cactus := g.Cactus.IMAGE.Size()
-	if g.Bird.X_POS-(float64(w_bird)*0.2) <= g.dino.X_POS+(float64(w_dino)*0.5) {
-		if g.dino.Y_POS-(float64(h_dino)*0.5) >= g.Bird.Y_POS+(float64(h_bird)*0.2) {
-			fmt.Println("BIRD COLISION")
-			fmt.Println("DINO X:  ", g.dino.X_POS+(float64(w_dino)*0.5))
-			fmt.Println("DINO Y: ", g.dino.Y_POS-(float64(h_dino)*0.5))
-			fmt.Println("BIRD X:  ", g.Bird.X_POS-(float64(w_bird)*0.2))
-			fmt.Println("BIRD Y: ", g.Bird.Y_POS+(float64(h_bird)*0.2))
+
+	if g.Bird.X_POS-(float64(w_bird)*0.3) <= g.dino.X_POS+(float64(w_dino)*0.4) {
+		if g.dino.Y_POS-(float64(h_dino)*0.4) >= g.Bird.Y_POS+(float64(h_bird)*0.9) {
 			return true
 		}
 	}
 	if g.Cactus.IS_LARGE {
 		if g.Cactus.X_POS-(float64(w_cactus)*0.3) <= g.dino.X_POS+(float64(w_dino)*0.4) {
 			if g.dino.Y_POS-(float64(h_dino)*0.4) <= g.Cactus.Y_POS+(float64(h_cactus)*0.4) {
-				fmt.Println("CACTUS LARGE COLISION")
-				fmt.Println("DINO X:  ", g.dino.X_POS+(float64(w_dino)*0.5))
-				fmt.Println("DINO Y: ", g.dino.Y_POS-(float64(h_dino)*0.5))
-				fmt.Println("CACTUS X:  ", g.Cactus.X_POS-(float64(w_cactus)*0.65))
-				fmt.Println("CACTUS Y: ", g.Cactus.Y_POS+(float64(h_cactus)*0.5))
 				return true
 			}
 		}
 	} else {
 		if g.Cactus.X_POS-(float64(w_cactus)*0.3) <= g.dino.X_POS+(float64(w_dino)*0.4) {
 			if g.dino.Y_POS-(float64(h_dino)*0.4) <= g.Cactus.Y_POS+(float64(h_cactus)*0.4) {
-				fmt.Println("CACTUS SMALL COLISION")
-				fmt.Println("DINO X:  ", g.dino.X_POS+(float64(w_dino)*0.5))
-				fmt.Println("DINO Y: ", g.dino.Y_POS-(float64(h_dino)*0.5))
-				fmt.Println("CACTUS X:  ", g.Cactus.X_POS-(float64(w_cactus)*0.65))
-				fmt.Println("CACTUS Y: ", g.Cactus.Y_POS+(float64(h_cactus)*0.5))
 				return true
 			}
 		}
@@ -469,7 +458,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	var texts []string
 	switch g.Mode {
 	case ModeTitle:
-		titleTexts = []string{"DINOGAME v0.9"}
+		titleTexts = []string{"DINOGAME v1.0"}
 		texts = []string{"WCIŚNIJ SPACE ABY ROZPOCZĄĆ GRĘ"}
 	case ModeGameOver:
 		texts = []string{"KONIEC GRY!"}
@@ -566,12 +555,9 @@ func (g *Game) DrawDinoRun(screen *ebiten.Image) {
 	} else if g.dino.IMAGE == RUNNING {
 		op.GeoM.Translate(-float64(w), -float64(h))
 	}
-
 	op.GeoM.Translate(float64(g.dino.X_POS+float64(w)), float64(screenHeight-g.dino.Y_POS+float64(h+128)))
 	if mod(g.dino.STEP_INDEX, 2) == 0 {
 		screen.DrawImage(g.dino.IMAGE, op)
-		//fmt.Println("Width:", g.dino.X_POS)
-		//fmt.Println("Height:", g.dino.Y_POS)
 	} else {
 		screen.DrawImage(g.dino.IMAGE2, op)
 
@@ -581,7 +567,6 @@ func (g *Game) DrawDinoRun(screen *ebiten.Image) {
 
 func (g *Game) DrawBG(screen *ebiten.Image) {
 	op := &ebiten.DrawImageOptions{}
-
 	op.GeoM.Translate(0, screenHeight-128)
 	screen.DrawImage(BG, op)
 }
