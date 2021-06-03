@@ -11,7 +11,7 @@ import (
 	"github.com/hajimehoshi/ebiten/ebitenutil"
 	"github.com/hajimehoshi/ebiten/inpututil"
 	"github.com/hajimehoshi/ebiten/text"
-	"github.com/msobczyk-x/dinogame/tree/master/assets/Font"
+	"github.com/hajimehoshi/ebiten/v2/examples/resources/fonts"
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/opentype"
 )
@@ -300,7 +300,7 @@ func (g *Game) Update(screen *ebiten.Image) error {
 			}
 
 		}
-		fmt.Println("Y BIRD: ", g.Bird.Y_POS)
+		//fmt.Println("Y BIRD: ", g.Bird.Y_POS)
 		//reakcje na klawisze dla dinozaura
 		if inpututil.IsKeyJustPressed(ebiten.KeySpace) {
 			g.dino.JUMP_STATE = true
@@ -384,7 +384,7 @@ func (g *Game) Update(screen *ebiten.Image) error {
 	return nil
 }
 func init() {
-	tt, err := opentype.Parse(Font.ARCADE_N_TTF)
+	tt, err := opentype.Parse(fonts.PressStart2P_ttf)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -423,13 +423,36 @@ func (g *Game) Collision() bool {
 	w_bird, h_bird := g.Bird.IMAGE.Size()
 	w_cactus, h_cactus := g.Cactus.IMAGE.Size()
 	if g.Bird.X_POS-(float64(w_bird)*0.2) <= g.dino.X_POS+(float64(w_dino)*0.5) {
-		if g.dino.Y_POS-(float64(h_dino)*0.5) <= g.Bird.Y_POS+(float64(h_bird)*0.2) {
+		if g.dino.Y_POS-(float64(h_dino)*0.5) >= g.Bird.Y_POS+(float64(h_bird)*0.2) {
+			fmt.Println("BIRD COLISION")
+			fmt.Println("DINO X:  ", g.dino.X_POS+(float64(w_dino)*0.5))
+			fmt.Println("DINO Y: ", g.dino.Y_POS-(float64(h_dino)*0.5))
+			fmt.Println("BIRD X:  ", g.Bird.X_POS-(float64(w_bird)*0.2))
+			fmt.Println("BIRD Y: ", g.Bird.Y_POS+(float64(h_bird)*0.2))
 			return true
 		}
 	}
-	if g.Cactus.X_POS-(float64(w_cactus)*0.65) <= g.dino.X_POS+(float64(w_dino)*0.5) {
-		if g.dino.Y_POS-(float64(h_dino)*0.5) <= g.Cactus.Y_POS+(float64(h_cactus)*0.5) {
-			return true
+	if g.Cactus.IS_LARGE {
+		if g.Cactus.X_POS-(float64(w_cactus)*0.3) <= g.dino.X_POS+(float64(w_dino)*0.4) {
+			if g.dino.Y_POS-(float64(h_dino)*0.4) <= g.Cactus.Y_POS+(float64(h_cactus)*0.4) {
+				fmt.Println("CACTUS LARGE COLISION")
+				fmt.Println("DINO X:  ", g.dino.X_POS+(float64(w_dino)*0.5))
+				fmt.Println("DINO Y: ", g.dino.Y_POS-(float64(h_dino)*0.5))
+				fmt.Println("CACTUS X:  ", g.Cactus.X_POS-(float64(w_cactus)*0.65))
+				fmt.Println("CACTUS Y: ", g.Cactus.Y_POS+(float64(h_cactus)*0.5))
+				return true
+			}
+		}
+	} else {
+		if g.Cactus.X_POS-(float64(w_cactus)*0.3) <= g.dino.X_POS+(float64(w_dino)*0.4) {
+			if g.dino.Y_POS-(float64(h_dino)*0.4) <= g.Cactus.Y_POS+(float64(h_cactus)*0.4) {
+				fmt.Println("CACTUS SMALL COLISION")
+				fmt.Println("DINO X:  ", g.dino.X_POS+(float64(w_dino)*0.5))
+				fmt.Println("DINO Y: ", g.dino.Y_POS-(float64(h_dino)*0.5))
+				fmt.Println("CACTUS X:  ", g.Cactus.X_POS-(float64(w_cactus)*0.65))
+				fmt.Println("CACTUS Y: ", g.Cactus.Y_POS+(float64(h_cactus)*0.5))
+				return true
+			}
 		}
 	}
 

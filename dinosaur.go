@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/hajimehoshi/ebiten"
-	"github.com/hajimehoshi/ebiten/inpututil"
 )
 
 type Dinosaur struct {
@@ -19,7 +18,7 @@ type Dinosaur struct {
 	JUMP_STATE bool
 }
 
-func (d Dinosaur) duck() {
+/* func (d Dinosaur) duck() {
 	d.IMAGE = DUCKING
 	d.Y_POS = d.Y_POS_DUCK
 	d.STEP_INDEX += 1
@@ -76,3 +75,4 @@ func (d *Dinosaur) update() {
 
 	}
 }
+*/
