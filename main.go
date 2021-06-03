@@ -446,7 +446,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	var texts []string
 	switch g.Mode {
 	case ModeTitle:
-		titleTexts = []string{"DINOGAME"}
+		titleTexts = []string{"DINOGAME v0.9"}
 		texts = []string{"WCIŚNIJ SPACE ABY ROZPOCZĄĆ GRĘ"}
 	case ModeGameOver:
 		texts = []string{"KONIEC GRY!"}
